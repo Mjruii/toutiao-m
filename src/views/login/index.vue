@@ -27,7 +27,8 @@
           :rules="formRules.code"
         >
           <template #button>
-            <van-button class="send-btn" @click.prevent="onSendSms" size="small" round>发送验证码</van-button>
+            <van-count-down v-if="isCountDown" :time="1000*60" format="ss s" @finish="isCountDown=false"></van-count-down>
+            <van-button class="send-btn" v-else @click.prevent="onSendSms" size="small" round   :loading="isSendSmsloading">发送验证码</van-button>
           </template>
         </van-field>
         <!-- 按钮 -->
@@ -45,7 +46,7 @@ export default {
   data () {
     return {
       user: {
-        code: '',
+        code: '246810',
         mobile: '17090086870'
       },
       formRules: {
@@ -57,7 +58,9 @@ export default {
           { required: true, message: '请填写验证码' },
           { pattern: /^\d{6}$/, message: '验证码格式错误' }
         ]
-      }
+      },
+      isCountDown: false,
+      isSendSmsloading: false
     }
   },
   methods: {
@@ -68,9 +71,9 @@ export default {
         duration: 0
       })
       try {
-        const res = await login(this.user)
+        const { data } = await login(this.user)
         Toast.success('登陆成功')
-        console.log('success', res)
+        this.$store.commit('setUser', data.data)
       } catch (error) {
         Toast.fail('登陆失败')
         console.log('fail', error)
@@ -88,8 +91,9 @@ export default {
       try {
         await this.$refs['login-form'].validate('mobile')
         // 请求验证码
-        const res = await sendSms(this.user.mobile)
-        console.log('92try', res)
+        this.isSendSmsloading = true
+        await sendSms(this.user.mobile)
+        this.isCountDown = true
       } catch (error) {
         console.dir(error)
         let message = ''
@@ -105,6 +109,7 @@ export default {
           position: 'top'
         })
       }
+      this.isSendSmsloading = false
     }
   }
 }
